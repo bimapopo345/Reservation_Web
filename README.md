@@ -92,9 +92,13 @@ CLIENT_ORIGIN="http://localhost:5173"
 PORT=4000
 ```
 
-Ini cocok untuk setup Docker lokal dengan root tanpa password. Untuk production, ganti `DATABASE_URL` dan `JWT_SECRET`.
+Ini cocok untuk setup lokal dengan root tanpa password, baik memakai Docker MariaDB maupun MySQL dari XAMPP. Untuk production, ganti `DATABASE_URL` dan `JWT_SECRET`.
 
-### Opsi 1: Pakai Container Yang Sudah Ada
+### Opsi 1: Docker MariaDB + phpMyAdmin
+
+Pakai opsi ini kalau database dijalankan lewat Docker Desktop seperti setup di mesin development saat ini.
+
+#### Pakai Container Yang Sudah Ada
 
 Kalau container sudah pernah dibuat, cukup start:
 
@@ -125,7 +129,7 @@ Test-NetConnection 127.0.0.1 -Port 8088
 
 `TcpTestSucceeded` harus `True`.
 
-### Opsi 2: Buat Container Baru
+#### Buat Container Baru
 
 Kalau belum punya container MariaDB dan phpMyAdmin:
 
@@ -168,6 +172,66 @@ Kalau database belum ada:
 ```powershell
 docker exec mysql_server_lokal mariadb -uroot -e "CREATE DATABASE IF NOT EXISTS workspace_plus CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 ```
+
+### Opsi 2: XAMPP MySQL + phpMyAdmin
+
+Pakai opsi ini kalau tidak memakai Docker dan database dijalankan dari XAMPP.
+
+Langkahnya:
+
+1. Buka XAMPP Control Panel.
+2. Klik `Start` pada module `MySQL`.
+3. Pastikan MySQL berjalan di port `3306`.
+4. Buka phpMyAdmin XAMPP:
+
+```text
+http://localhost/phpmyadmin
+```
+
+Default XAMPP biasanya:
+
+- Host: `127.0.0.1`
+- Port: `3306`
+- Username: `root`
+- Password: kosong
+
+Kalau masih default seperti itu, file `server/.env` yang ikut repo sudah cocok:
+
+```env
+DATABASE_URL="mysql://root@127.0.0.1:3306/workspace_plus"
+```
+
+Buat database dari phpMyAdmin:
+
+1. Buka `http://localhost/phpmyadmin`.
+2. Klik `New`.
+3. Isi database name: `workspace_plus`.
+4. Pilih collation `utf8mb4_unicode_ci` jika tersedia.
+5. Klik `Create`.
+
+Atau buat lewat terminal jika command `mysql` XAMPP tersedia:
+
+```powershell
+mysql -uroot -e "CREATE DATABASE IF NOT EXISTS workspace_plus CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+```
+
+Setelah database dibuat, jalankan migration dan seed dari root project:
+
+```powershell
+npm run db:deploy
+npm run db:seed
+```
+
+### Perbedaan Docker dan XAMPP
+
+Secara aplikasi tidak ada perbedaan. Backend hanya membaca `DATABASE_URL`.
+
+| Setup | MySQL Host | Port | phpMyAdmin |
+| --- | --- | --- | --- |
+| Docker | `127.0.0.1` | `3306` | `http://localhost:8088` |
+| XAMPP | `127.0.0.1` | `3306` | `http://localhost/phpmyadmin` |
+
+Selama database bisa diakses di `127.0.0.1:3306`, user `root`, password kosong, dan database bernama `workspace_plus`, project bisa jalan dengan env yang sama.
 
 ## Cara Clone dan Menjalankan Project
 
