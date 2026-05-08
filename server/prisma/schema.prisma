@@ -1,0 +1,101 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum ReservationStatus {
+  UPCOMING
+  ACTIVE
+  CHECKED_OUT
+  COMPLETED
+  CANCELLED
+}
+
+model User {
+  id                  Int                  @id @default(autoincrement())
+  nik                 String               @unique @db.VarChar(32)
+  employeeCode        String?              @unique @db.VarChar(32)
+  name                String               @db.VarChar(160)
+  email               String?              @unique @db.VarChar(191)
+  passwordHash        String               @db.VarChar(191)
+  position            String?              @db.VarChar(191)
+  department          String?              @db.VarChar(120)
+  phone               String?              @db.VarChar(64)
+  role                Role                 @default(USER)
+  reservations        Reservation[]
+  deskTypeAssignments DeskTypeAssignment[]
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+}
+
+model Floor {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique @db.VarChar(80)
+  desks     Desk[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model DeskType {
+  id          Int                  @id @default(autoincrement())
+  name        String               @unique @db.VarChar(80)
+  description String               @db.Text
+  desks       Desk[]
+  assignments DeskTypeAssignment[]
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+}
+
+model Desk {
+  id           Int           @id @default(autoincrement())
+  name         String        @unique @db.VarChar(80)
+  capacity     Int
+  floorId      Int
+  deskTypeId   Int?
+  floor        Floor         @relation(fields: [floorId], references: [id], onDelete: Cascade)
+  deskType     DeskType?     @relation(fields: [deskTypeId], references: [id], onDelete: SetNull)
+  reservations Reservation[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([floorId])
+  @@index([deskTypeId])
+}
+
+model DeskTypeAssignment {
+  id         Int      @id @default(autoincrement())
+  deskTypeId Int
+  userId     Int
+  deskType   DeskType @relation(fields: [deskTypeId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@unique([deskTypeId, userId])
+}
+
+model Reservation {
+  id         Int               @id @default(autoincrement())
+  userId     Int
+  deskId     Int
+  date       DateTime          @db.Date
+  status     ReservationStatus @default(UPCOMING)
+  checkInAt  DateTime?
+  checkOutAt DateTime?
+  user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  desk       Desk              @relation(fields: [deskId], references: [id], onDelete: Cascade)
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+
+  @@index([userId, date])
+  @@index([deskId, date])
+  @@index([date, status])
+}
