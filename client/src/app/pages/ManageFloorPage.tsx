@@ -1,5 +1,7 @@
 import { Pencil, Plus, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
+import { ConfirmDialog } from '../components/ConfirmDialog';
 import { apiFetch } from '../lib/api';
 import type { Floor } from '../types';
 
@@ -7,6 +9,7 @@ export function ManageFloorPage() {
   const [floors, setFloors] = useState<Floor[]>([]);
   const [newFloorName, setNewFloorName] = useState('');
   const [editingFloor, setEditingFloor] = useState<Floor | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Floor | null>(null);
 
   const loadFloors = () => apiFetch<Floor[]>('/floors').then(setFloors);
 
@@ -24,13 +27,15 @@ export function ManageFloorPage() {
     await apiFetch('/floors', { method: 'POST', body: { name: newFloorName } });
     resetForm();
     await loadFloors();
+    toast.success('Floor created successfully.');
   };
 
-  const handleDelete = async (id: number) => {
-    if (confirm('Are you sure you want to delete this floor?')) {
-      await apiFetch(`/floors/${id}`, { method: 'DELETE' });
-      await loadFloors();
-    }
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    await apiFetch(`/floors/${deleteTarget.id}`, { method: 'DELETE' });
+    setDeleteTarget(null);
+    await loadFloors();
+    toast.success('Floor deleted successfully.');
   };
 
   const handleEdit = (floor: Floor) => {
@@ -43,6 +48,7 @@ export function ManageFloorPage() {
     await apiFetch(`/floors/${editingFloor.id}`, { method: 'PUT', body: { name: newFloorName } });
     resetForm();
     await loadFloors();
+    toast.success('Floor updated successfully.');
   };
 
   return (
@@ -117,7 +123,7 @@ export function ManageFloorPage() {
                             <Pencil className="w-4 h-4" />
                             Edit
                           </button>
-                          <button onClick={() => handleDelete(floor.id)} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg flex items-center gap-1 text-sm font-semibold transition-colors">
+                          <button onClick={() => setDeleteTarget(floor)} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg flex items-center gap-1 text-sm font-semibold transition-colors">
                             <Trash2 className="w-4 h-4" />
                             Delete
                           </button>
@@ -131,6 +137,13 @@ export function ManageFloorPage() {
           </div>
         </div>
       </div>
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        title="Delete floor?"
+        description={`Are you sure you want to delete ${deleteTarget?.name ?? 'this floor'}? This action cannot be undone.`}
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={handleDelete}
+      />
     </div>
   );
 }

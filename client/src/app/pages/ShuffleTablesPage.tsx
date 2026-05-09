@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useAuth } from '../context/AuthContext';
 import { ApiError, apiFetch } from '../lib/api';
-import { formatDisplayDate, todayInput, tomorrowInput } from '../lib/dates';
+import { formatDisplayDate, reservationDateLabel, todayInput, tomorrowInput } from '../lib/dates';
 import type { Reservation, WorkspaceSummary } from '../types';
 
 export function ShuffleTablesPage() {
@@ -218,7 +218,7 @@ export function ShuffleTablesPage() {
               </div>
               <p className="text-sm text-gray-600 mb-4">Your table has been assigned.</p>
               <div className="bg-white rounded-xl p-6 shadow-lg">
-                <p className="text-xs text-gray-500 uppercase tracking-wide mb-3">Your Reserved Table</p>
+                <p className="text-xs text-gray-500 uppercase tracking-wide mb-3">{reservationDateLabel(shuffleResult.date)}</p>
                 <div className="flex items-center justify-center gap-4 mb-4">
                   <div className="text-center">
                     <p className="text-xs text-gray-500 mb-1">Floor</p>
@@ -236,22 +236,13 @@ export function ShuffleTablesPage() {
                 </div>
               </div>
 
-              <div className="flex gap-3 mt-4">
+              <div className="mt-4">
                 <button
                   onClick={handleGoToHome}
-                  className="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 px-6 rounded-xl transition-colors flex items-center justify-center gap-2"
+                  className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 px-6 rounded-xl transition-colors flex items-center justify-center gap-2"
                 >
                   <Home className="w-4 h-4" />
                   Go to Home
-                </button>
-                <button
-                  onClick={() => {
-                    setShuffleResult(null);
-                    setErrorMessage(null);
-                  }}
-                  className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 px-6 rounded-xl transition-colors"
-                >
-                  Shuffle Again
                 </button>
               </div>
             </div>

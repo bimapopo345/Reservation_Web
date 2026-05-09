@@ -2,6 +2,7 @@ import { BarChart3, Building2, Clock, Clipboard, Home, LogOut, Menu, Monitor, Us
 import { Link, useLocation, useNavigate } from 'react-router';
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { OtsukaLogo } from './OtsukaLogo';
 
 export function MobileSidebar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -10,10 +11,7 @@ export function MobileSidebar() {
   const { user, logout } = useAuth();
 
   const isActive = (path: string) => {
-    if (path === '/' || path === '/admin-home') {
-      return location.pathname === path;
-    }
-    return location.pathname.startsWith(path);
+    return location.pathname === path;
   };
 
   const closeMenu = () => setIsOpen(false);
@@ -47,13 +45,8 @@ export function MobileSidebar() {
     <>
       <div className="fixed top-0 left-0 right-0 bg-white shadow-md z-40 px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="w-6 h-6 bg-blue-500 rounded-lg flex items-center justify-center">
-            <Home className="w-4 h-4 text-white" />
-          </div>
-          <div>
-            <h1 className="font-bold text-xs text-gray-900">Workspace+</h1>
-            <p className="text-[8px] text-blue-600 font-semibold">DESK RESERVATION</p>
-          </div>
+          <OtsukaLogo compact />
+          <div className="text-xs font-bold text-[#0b4ea2]">OTSUKA</div>
         </div>
         <button onClick={() => setIsOpen(!isOpen)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
           <Menu className="w-6 h-6 text-gray-700" />
@@ -75,15 +68,7 @@ export function MobileSidebar() {
           </div>
 
           <div className="mb-6 bg-white rounded-2xl p-3 shadow-sm">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
-                <Home className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <h1 className="font-bold text-sm text-gray-900">Workspace+</h1>
-                <p className="text-xs text-blue-600 font-semibold">DESK RESERVATION</p>
-              </div>
-            </div>
+            <OtsukaLogo />
           </div>
 
           <div className="mb-6 bg-white rounded-2xl p-3 shadow-sm">

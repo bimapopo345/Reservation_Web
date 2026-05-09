@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useAuth } from '../context/AuthContext';
 import { apiFetch } from '../lib/api';
-import { formatDisplayDate } from '../lib/dates';
+import { formatDisplayDate, reservationDateLabel } from '../lib/dates';
 import type { Reservation, WorkspaceSummary } from '../types';
 
 export function AdminHomePage() {
@@ -107,7 +107,7 @@ export function AdminHomePage() {
             <div className="bg-white rounded-3xl p-6 shadow-lg border-2 border-blue-200">
               <div className="flex items-center gap-2 mb-4">
                 <Calendar className="w-5 h-5 text-blue-600" />
-                <h3 className="font-bold text-lg text-gray-900">Today's Reservation</h3>
+                <h3 className="font-bold text-lg text-gray-900">{reservationDateLabel(reservation.date)}</h3>
               </div>
               <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-4 mb-4">
                 <div className="flex items-center justify-between">

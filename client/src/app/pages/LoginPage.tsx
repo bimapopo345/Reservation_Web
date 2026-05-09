@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { Lock, User } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { OtsukaLogo } from '../components/OtsukaLogo';
 
 export function LoginPage() {
   const [nik, setNik] = useState('');
@@ -30,8 +31,8 @@ export function LoginPage() {
     <div className="min-h-screen bg-gradient-to-br from-[#615fff] via-[#4f39f6] to-[#9810fa] flex items-center justify-center p-4">
       <div className="w-full max-w-[416px] rounded-3xl border border-white/20 bg-white/10 p-7 shadow-2xl backdrop-blur-sm">
         <div className="text-center mb-8">
-          <div className="w-20 h-20 rounded-2xl bg-white/10 shadow mx-auto mb-4 flex items-center justify-center">
-            <span className="text-white text-2xl font-bold">W+</span>
+          <div className="mx-auto mb-4 flex justify-center">
+            <OtsukaLogo light />
           </div>
           <h1 className="text-2xl font-bold text-white tracking-wide">Workspace+</h1>
           <p className="text-white/75 text-sm mt-1">Smart Desk System</p>
@@ -66,13 +67,6 @@ export function LoginPage() {
                 required
               />
             </div>
-            <button
-              type="button"
-              onClick={() => setError('Please contact your Workspace+ administrator to reset your password.')}
-              className="block ml-auto mt-2 text-xs text-white/80 underline hover:text-white"
-            >
-              Forgot password?
-            </button>
           </div>
 
           {error && (
@@ -90,13 +84,6 @@ export function LoginPage() {
           </button>
         </form>
 
-        <div className="mt-6 p-4 bg-white/10 rounded-xl border border-white/10">
-          <p className="text-xs font-semibold text-white mb-2">Demo Credentials:</p>
-          <div className="text-xs text-white/80 space-y-1">
-            <p>User: NIK <span className="font-mono font-bold text-white">456</span> / Password <span className="font-mono font-bold text-white">demo</span></p>
-            <p>Admin: NIK <span className="font-mono font-bold text-white">567</span> / Password <span className="font-mono font-bold text-white">demo</span></p>
-          </div>
-        </div>
       </div>
     </div>
   );

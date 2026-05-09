@@ -1,12 +1,16 @@
 import { Building2, Calendar, ClipboardList, MapPin } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { apiFetch } from '../lib/api';
 import { formatDisplayDate } from '../lib/dates';
 import type { Reservation, ReservationStatus } from '../types';
 
+type StatusFilter = 'all' | 'UPCOMING' | 'ACTIVE' | 'COMPLETED';
+
 export function HistoryPage() {
   const [history, setHistory] = useState<Reservation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [dateFilter, setDateFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
 
   useEffect(() => {
     apiFetch<Reservation[]>('/reservations/history')
@@ -34,7 +38,7 @@ export function HistoryPage() {
       case 'UPCOMING':
         return 'Upcoming';
       case 'ACTIVE':
-        return 'Active';
+        return 'Actived';
       case 'CHECKED_OUT':
         return 'Checked Out';
       case 'COMPLETED':
@@ -44,6 +48,16 @@ export function HistoryPage() {
     }
   };
 
+  const filteredHistory = useMemo(
+    () =>
+      history.filter((item) => {
+        const dateMatch = !dateFilter || item.date === dateFilter;
+        const statusMatch = statusFilter === 'all' || item.status === statusFilter;
+        return dateMatch && statusMatch;
+      }),
+    [dateFilter, history, statusFilter],
+  );
+
   return (
     <div className="flex-1 bg-gradient-to-br from-indigo-500 via-indigo-600 to-purple-600 p-4 md:p-8 overflow-auto pt-20 md:pt-8">
       <div className="bg-white rounded-3xl py-4 px-8 mb-6 shadow-lg max-w-5xl mx-auto text-center">
@@ -51,21 +65,58 @@ export function HistoryPage() {
       </div>
 
       <div className="max-w-5xl mx-auto">
+        <div className="bg-white rounded-3xl p-5 shadow-lg mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Filter Date</label>
+              <input
+                type="date"
+                value={dateFilter}
+                onChange={(event) => setDateFilter(event.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Filter Status</label>
+              <select
+                value={statusFilter}
+                onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              >
+                <option value="all">All Status</option>
+                <option value="UPCOMING">Upcoming</option>
+                <option value="ACTIVE">Actived</option>
+                <option value="COMPLETED">Completed</option>
+              </select>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setDateFilter('');
+                setStatusFilter('all');
+              }}
+              className="rounded-xl bg-gray-100 px-5 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-200 transition-colors"
+            >
+              Reset Filter
+            </button>
+          </div>
+        </div>
+
         {isLoading ? (
           <div className="bg-white rounded-3xl p-12 shadow-lg text-center text-gray-500">Loading history...</div>
-        ) : history.length === 0 ? (
+        ) : filteredHistory.length === 0 ? (
           <div className="bg-white rounded-3xl p-12 shadow-lg">
             <div className="flex flex-col items-center justify-center text-center">
               <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mb-4">
                 <ClipboardList className="w-8 h-8 text-gray-400" />
               </div>
-              <p className="text-sm text-gray-500">No reservation history.</p>
+              <p className="text-sm text-gray-500">No reservations match the selected filter.</p>
             </div>
           </div>
         ) : (
           <div className="bg-white rounded-3xl p-6 shadow-lg">
             <div className="space-y-3">
-              {history.map((item) => (
+              {filteredHistory.map((item) => (
                 <div key={item.id} className="bg-gray-50 rounded-2xl p-4 hover:bg-gray-100 transition-colors">
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-3 flex-1 min-w-0">

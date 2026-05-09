@@ -1,5 +1,7 @@
 import { Pencil, Plus, Search, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { toast } from 'sonner';
+import { ConfirmDialog } from '../components/ConfirmDialog';
 import { apiFetch } from '../lib/api';
 import type { AppUser, Role } from '../types';
 
@@ -24,6 +26,7 @@ export function ManageUserPage() {
   const [formData, setFormData] = useState<UserForm>(emptyForm);
   const [searchQuery, setSearchQuery] = useState('');
   const [editingUser, setEditingUser] = useState<AppUser | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<AppUser | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
@@ -42,29 +45,32 @@ export function ManageUserPage() {
 
   const handleCreate = async () => {
     if (!validateForm()) {
-      alert('Please fill all fields');
+      toast.error('Please fill all fields.');
       return;
     }
     await apiFetch('/users', { method: 'POST', body: formData });
     resetForm();
     await loadUsers();
+    toast.success('User created successfully.');
   };
 
   const handleUpdate = async () => {
     if (!editingUser || !validateForm()) {
-      alert('Please fill all fields');
+      toast.error('Please fill all fields.');
       return;
     }
     await apiFetch(`/users/${editingUser.id}`, { method: 'PUT', body: formData });
     resetForm();
     await loadUsers();
+    toast.success('User updated successfully.');
   };
 
-  const handleDelete = async (id: number) => {
-    if (confirm('Are you sure you want to delete this user?')) {
-      await apiFetch(`/users/${id}`, { method: 'DELETE' });
-      await loadUsers();
-    }
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    await apiFetch(`/users/${deleteTarget.id}`, { method: 'DELETE' });
+    setDeleteTarget(null);
+    await loadUsers();
+    toast.success('User deleted successfully.');
   };
 
   const handleEdit = (user: AppUser) => {
@@ -189,7 +195,7 @@ export function ManageUserPage() {
                           <Pencil className="w-4 h-4" />
                           Edit
                         </button>
-                        <button onClick={() => handleDelete(user.id)} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg flex items-center gap-1 text-sm font-semibold transition-colors">
+                        <button onClick={() => setDeleteTarget(user)} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg flex items-center gap-1 text-sm font-semibold transition-colors">
                           <Trash2 className="w-4 h-4" />
                           Delete
                         </button>
@@ -221,6 +227,13 @@ export function ManageUserPage() {
           )}
         </div>
       </div>
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        title="Delete user?"
+        description={`Are you sure you want to delete ${deleteTarget?.name ?? 'this user'}? This action cannot be undone.`}
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={handleDelete}
+      />
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { Shuffle, Monitor, Map, ArrowRight, Zap } from 'lucide-react';
+import { Shuffle, Monitor, Map, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router';
 
 export function QuickActions() {
@@ -31,26 +31,23 @@ export function QuickActions() {
 
   return (
     <div className="bg-white rounded-3xl p-6 shadow-xl h-full">
-      <div className="flex items-center gap-2 mb-4">
-        <Zap className="w-4 h-4 text-orange-500" fill="currentColor" />
-        <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Quick Actions</h2>
-      </div>
+      <h2 className="font-bold text-lg text-gray-900 mb-4">Quick Actions</h2>
 
-      <div className="space-y-2">
+      <div className="space-y-3">
         {actions.map((action, index) => (
           <Link
             key={index}
             to={action.link}
-            className="w-full bg-gray-50 rounded-xl p-2.5 flex items-center gap-2.5 hover:bg-gray-100 transition-all group"
+            className="w-full flex items-center gap-3 p-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors text-left group"
           >
-            <div className={`w-9 h-9 ${action.color} rounded-lg flex items-center justify-center shrink-0`}>
-              <action.icon className={`w-4 h-4 ${action.iconColor}`} />
+            <div className={`w-10 h-10 ${action.color} rounded-xl flex items-center justify-center shrink-0`}>
+              <action.icon className={`w-5 h-5 ${action.iconColor}`} />
             </div>
             <div className="flex-1 text-left min-w-0">
-              <h3 className="font-semibold text-xs text-gray-900">{action.title}</h3>
-              <p className="text-[10px] text-gray-500 leading-tight truncate">{action.description}</p>
+              <h3 className="font-semibold text-gray-900">{action.title}</h3>
+              <p className="text-xs text-gray-500 truncate">{action.description}</p>
             </div>
-            <ArrowRight className="w-3.5 h-3.5 text-gray-400 group-hover:text-gray-600 group-hover:translate-x-0.5 transition-all shrink-0" />
+            <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-gray-600 group-hover:translate-x-0.5 transition-all shrink-0" />
           </Link>
         ))}
       </div>

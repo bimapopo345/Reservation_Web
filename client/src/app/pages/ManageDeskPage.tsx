@@ -1,5 +1,7 @@
 import { Pencil, Plus, Search, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { toast } from 'sonner';
+import { ConfirmDialog } from '../components/ConfirmDialog';
 import { apiFetch } from '../lib/api';
 import type { Desk, DeskType, Floor } from '../types';
 
@@ -19,6 +21,7 @@ export function ManageDeskPage() {
   const [formData, setFormData] = useState<DeskForm>(emptyForm);
   const [searchQuery, setSearchQuery] = useState('');
   const [editingDesk, setEditingDesk] = useState<Desk | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Desk | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
@@ -53,29 +56,32 @@ export function ManageDeskPage() {
 
   const handleCreate = async () => {
     if (!validateForm()) {
-      alert('Please fill all required fields');
+      toast.error('Please fill all required fields.');
       return;
     }
     await apiFetch('/desks', { method: 'POST', body: payloadFromForm() });
     resetForm();
     await loadData();
+    toast.success('Desk created successfully.');
   };
 
   const handleUpdate = async () => {
     if (!editingDesk || !validateForm()) {
-      alert('Please fill all required fields');
+      toast.error('Please fill all required fields.');
       return;
     }
     await apiFetch(`/desks/${editingDesk.id}`, { method: 'PUT', body: payloadFromForm() });
     resetForm();
     await loadData();
+    toast.success('Desk updated successfully.');
   };
 
-  const handleDelete = async (id: number) => {
-    if (confirm('Are you sure you want to delete this desk?')) {
-      await apiFetch(`/desks/${id}`, { method: 'DELETE' });
-      await loadData();
-    }
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    await apiFetch(`/desks/${deleteTarget.id}`, { method: 'DELETE' });
+    setDeleteTarget(null);
+    await loadData();
+    toast.success('Desk deleted successfully.');
   };
 
   const handleEdit = (desk: Desk) => {
@@ -204,7 +210,7 @@ export function ManageDeskPage() {
                           <Pencil className="w-4 h-4" />
                           Edit
                         </button>
-                        <button onClick={() => handleDelete(desk.id)} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg flex items-center gap-1 text-sm font-semibold transition-colors">
+                        <button onClick={() => setDeleteTarget(desk)} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg flex items-center gap-1 text-sm font-semibold transition-colors">
                           <Trash2 className="w-4 h-4" />
                           Delete
                         </button>
@@ -236,6 +242,13 @@ export function ManageDeskPage() {
           )}
         </div>
       </div>
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        title="Delete desk?"
+        description={`Are you sure you want to delete ${deleteTarget?.name ?? 'this desk'}? This action cannot be undone.`}
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={handleDelete}
+      />
     </div>
   );
 }

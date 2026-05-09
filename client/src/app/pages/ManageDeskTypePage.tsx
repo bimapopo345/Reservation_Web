@@ -1,5 +1,7 @@
 import { ArrowLeft, Pencil, Plus, Search, Trash2, UserPlus, Users, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { toast } from 'sonner';
+import { ConfirmDialog } from '../components/ConfirmDialog';
 import { apiFetch } from '../lib/api';
 import type { AppUser, DeskType } from '../types';
 
@@ -20,6 +22,8 @@ export function ManageDeskTypePage() {
   const [formData, setFormData] = useState<DeskTypeForm>(emptyForm);
   const [searchQuery, setSearchQuery] = useState('');
   const [editingDeskType, setEditingDeskType] = useState<DeskType | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<DeskType | null>(null);
+  const [clearAllTarget, setClearAllTarget] = useState<DeskType | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
@@ -57,6 +61,7 @@ export function ManageDeskTypePage() {
     });
     setEmployeeSearchQuery('');
     setShowSuccessMessage(true);
+    toast.success('Employee assigned successfully.');
     setTimeout(() => setShowSuccessMessage(false), 3000);
     await loadData();
   };
@@ -65,14 +70,20 @@ export function ManageDeskTypePage() {
     if (!selectedDeskType) return;
     await apiFetch(`/desk-types/${selectedDeskType.id}/assignments/${employeeId}`, { method: 'DELETE' });
     await loadData();
+    toast.success('Employee unassigned successfully.');
+  };
+
+  const requestClearAll = () => {
+    if (!selectedDeskType) return;
+    setClearAllTarget(selectedDeskType);
   };
 
   const handleClearAll = async () => {
-    if (!selectedDeskType) return;
-    if (confirm('Are you sure you want to remove all employees from this desk type?')) {
-      await apiFetch(`/desk-types/${selectedDeskType.id}/assignments`, { method: 'DELETE' });
-      await loadData();
-    }
+    if (!clearAllTarget) return;
+    await apiFetch(`/desk-types/${clearAllTarget.id}/assignments`, { method: 'DELETE' });
+    setClearAllTarget(null);
+    await loadData();
+    toast.success('All assignments removed successfully.');
   };
 
   const resetForm = () => {
@@ -84,19 +95,21 @@ export function ManageDeskTypePage() {
 
   const handleCreate = async () => {
     if (!validateForm()) {
-      alert('Please fill all fields');
+      toast.error('Please fill all fields.');
       return;
     }
     await apiFetch('/desk-types', { method: 'POST', body: formData });
     resetForm();
     await loadData();
+    toast.success('Desk type created successfully.');
   };
 
-  const handleDelete = async (id: number) => {
-    if (confirm('Are you sure you want to delete this desk type?')) {
-      await apiFetch(`/desk-types/${id}`, { method: 'DELETE' });
-      await loadData();
-    }
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    await apiFetch(`/desk-types/${deleteTarget.id}`, { method: 'DELETE' });
+    setDeleteTarget(null);
+    await loadData();
+    toast.success('Desk type deleted successfully.');
   };
 
   const handleEdit = (deskType: DeskType) => {
@@ -106,12 +119,13 @@ export function ManageDeskTypePage() {
 
   const handleUpdate = async () => {
     if (!editingDeskType || !validateForm()) {
-      alert('Please fill all fields');
+      toast.error('Please fill all fields.');
       return;
     }
     await apiFetch(`/desk-types/${editingDeskType.id}`, { method: 'PUT', body: formData });
     resetForm();
     await loadData();
+    toast.success('Desk type updated successfully.');
   };
 
   const handleAssignClick = (deskType: DeskType) => {
@@ -160,7 +174,7 @@ export function ManageDeskTypePage() {
             onBack={handleBackToCrud}
             onAssign={handleAssignEmployee}
             onUnassign={handleUnassignEmployee}
-            onClearAll={handleClearAll}
+            onClearAll={requestClearAll}
           />
         ) : (
           <div className="bg-white rounded-3xl p-8 shadow-lg">
@@ -230,7 +244,7 @@ export function ManageDeskTypePage() {
                             <Pencil className="w-4 h-4" />
                             Edit
                           </button>
-                          <button onClick={() => handleDelete(type.id)} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg flex items-center gap-1 text-sm font-semibold transition-colors">
+                          <button onClick={() => setDeleteTarget(type)} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg flex items-center gap-1 text-sm font-semibold transition-colors">
                             <Trash2 className="w-4 h-4" />
                             Delete
                           </button>
@@ -263,6 +277,21 @@ export function ManageDeskTypePage() {
           </div>
         )}
       </div>
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        title="Delete desk type?"
+        description={`Are you sure you want to delete ${deleteTarget?.name ?? 'this desk type'}? This action cannot be undone.`}
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={handleDelete}
+      />
+      <ConfirmDialog
+        open={Boolean(clearAllTarget)}
+        title="Remove all assignments?"
+        description={`Are you sure you want to remove all employees from ${clearAllTarget?.name ?? 'this desk type'}?`}
+        confirmLabel="Remove All"
+        onCancel={() => setClearAllTarget(null)}
+        onConfirm={handleClearAll}
+      />
     </div>
   );
 }

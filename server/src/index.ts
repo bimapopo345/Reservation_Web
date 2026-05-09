@@ -15,6 +15,12 @@ const activeReservationStatuses = [
   ReservationStatus.CHECKED_OUT,
 ];
 
+const AUTO_CHECK_IN_HOUR = 8;
+const AUTO_CHECK_IN_MINUTE = 15;
+const AUTO_CHECK_OUT_HOUR = 17;
+const AUTO_CHECK_OUT_MINUTE = 15;
+const SAME_DAY_CHECK_IN_GRACE_MINUTES = 15;
+
 const userSelect = {
   id: true,
   nik: true,
@@ -40,7 +46,10 @@ app.use(cookieParser());
 
 function route(handler: (req: Request, res: Response) => Promise<void>) {
   return (req: Request, res: Response) => {
-    handler(req, res).catch((error) => {
+    (async () => {
+      await runReservationAutomation();
+      await handler(req, res);
+    })().catch((error) => {
       if (error instanceof z.ZodError) {
         res.status(400).json({ message: 'Invalid request', issues: error.flatten() });
         return;
@@ -64,6 +73,115 @@ function toDateOnly(value?: string) {
 
 function toDateInput(date: Date) {
   return date.toISOString().slice(0, 10);
+}
+
+function toLocalDateInput(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function dateTimeForReservationDate(date: Date, hour: number, minute: number) {
+  const [year, month, day] = toDateInput(date).split('-').map(Number);
+  return new Date(year, month - 1, day, hour, minute, 0, 0);
+}
+
+function sameDate(first: Date, second: Date) {
+  return toLocalDateInput(first) === toLocalDateInput(second);
+}
+
+function checkInDueAt(reservation: { date: Date; createdAt: Date }) {
+  const floorOpeningDue = dateTimeForReservationDate(reservation.date, AUTO_CHECK_IN_HOUR, AUTO_CHECK_IN_MINUTE);
+  const sameDayGraceDue = new Date(reservation.createdAt.getTime() + SAME_DAY_CHECK_IN_GRACE_MINUTES * 60 * 1000);
+
+  if (sameDate(reservation.createdAt, reservation.date) && sameDayGraceDue > floorOpeningDue) {
+    return sameDayGraceDue;
+  }
+
+  return floorOpeningDue;
+}
+
+function checkOutDueAt(date: Date) {
+  return dateTimeForReservationDate(date, AUTO_CHECK_OUT_HOUR, AUTO_CHECK_OUT_MINUTE);
+}
+
+let automationPromise: Promise<void> | null = null;
+let lastAutomationRunAt = 0;
+
+async function runReservationAutomation() {
+  const nowMs = Date.now();
+  if (automationPromise) return automationPromise;
+  if (nowMs - lastAutomationRunAt < 30_000) return;
+
+  lastAutomationRunAt = nowMs;
+  automationPromise = applyAutomaticReservationTransitions()
+    .catch((error) => {
+      console.error('Reservation automation failed', error);
+    })
+    .finally(() => {
+      automationPromise = null;
+    });
+
+  return automationPromise;
+}
+
+async function applyAutomaticReservationTransitions(now = new Date()) {
+  const today = toDateOnly();
+  const reservations = await prisma.reservation.findMany({
+    where: {
+      date: { lte: today },
+      status: { in: [ReservationStatus.UPCOMING, ReservationStatus.ACTIVE] },
+    },
+    select: {
+      id: true,
+      date: true,
+      status: true,
+      createdAt: true,
+      checkInAt: true,
+    },
+  });
+
+  for (const reservation of reservations) {
+    const checkInDue = checkInDueAt(reservation);
+    const checkOutDue = checkOutDueAt(reservation.date);
+
+    if (reservation.status === ReservationStatus.UPCOMING) {
+      if (now >= checkOutDue) {
+        await prisma.reservation.update({
+          where: { id: reservation.id },
+          data: {
+            status: ReservationStatus.CHECKED_OUT,
+            checkInAt: reservation.checkInAt ?? checkInDue,
+            checkOutAt: checkOutDue,
+          },
+        });
+        continue;
+      }
+
+      if (now >= checkInDue) {
+        await prisma.reservation.update({
+          where: { id: reservation.id },
+          data: {
+            status: ReservationStatus.ACTIVE,
+            checkInAt: reservation.checkInAt ?? checkInDue,
+          },
+        });
+      }
+      continue;
+    }
+
+    if (reservation.status === ReservationStatus.ACTIVE && now >= checkOutDue) {
+      await prisma.reservation.update({
+        where: { id: reservation.id },
+        data: {
+          status: ReservationStatus.CHECKED_OUT,
+          checkInAt: reservation.checkInAt ?? checkInDue,
+          checkOutAt: checkOutDue,
+        },
+      });
+    }
+  }
 }
 
 function toTime(date?: Date | null) {
@@ -791,3 +909,9 @@ app.get(
 app.listen(env.port, () => {
   console.log(`Workspace+ API listening on http://localhost:${env.port}`);
 });
+
+const reservationAutomationTimer = setInterval(() => {
+  runReservationAutomation();
+}, 60_000);
+
+reservationAutomationTimer.unref();

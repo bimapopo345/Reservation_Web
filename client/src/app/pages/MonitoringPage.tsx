@@ -1,4 +1,4 @@
-import { MapPin, Search } from 'lucide-react';
+import { Eye, EyeOff, MapPin, Search, Users } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { DeskCard } from '../components/DeskCard';
@@ -22,6 +22,7 @@ export function MonitoringPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDesk, setSelectedDesk] = useState<MonitoringDesk | null>(null);
   const [data, setData] = useState<MonitoringResponse | null>(null);
+  const [showReservedList, setShowReservedList] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -36,6 +37,8 @@ export function MonitoringPage() {
   const getFloorLabel = () => (selectedFloor === 'all' ? 'All Floors' : `Floor ${selectedFloor}`);
   const desks = data?.desks ?? [];
   const employees = data?.employees ?? [];
+  const reservedEmployees = useMemo(() => desks.flatMap((desk) => desk.employees), [desks]);
+  const listedEmployees = searchQuery.trim() ? employees : reservedEmployees;
 
   const deskEmployees = useMemo(() => {
     const map = new Map<number, MonitoringDesk['employees']>();
@@ -91,7 +94,7 @@ export function MonitoringPage() {
           </div>
         </div>
 
-        <div className="flex flex-col md:flex-row items-center justify-between pt-4 border-t border-gray-200">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-3 pt-4 border-t border-gray-200">
           {searchQuery.trim() ? (
             <p className="text-sm text-gray-600 mb-2 md:mb-0">
               Found <span className="font-bold text-gray-900">{employees.length}</span> employee(s) matching your search ({getFloorLabel()})
@@ -102,32 +105,57 @@ export function MonitoringPage() {
               <span className="font-bold text-gray-900">{data?.summary.totalDesks ?? 0}</span>
             </p>
           )}
-          <button
-            onClick={() => navigate(`/employee-list?floor=${selectedFloor}&date=${selectedDate}`)}
-            className="text-sm text-blue-600 font-semibold hover:text-blue-700 transition-colors"
-          >
-            Tampilkan daftar
-          </button>
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <button
+              onClick={() => setShowReservedList((value) => !value)}
+              className="inline-flex items-center gap-2 rounded-xl bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-100 transition-colors"
+            >
+              {showReservedList ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              {showReservedList ? 'Sembunyikan Daftar' : 'Tampilkan Daftar'}
+            </button>
+            <button
+              onClick={() => navigate(`/employee-list?floor=${selectedFloor}&date=${selectedDate}`)}
+              className="rounded-xl bg-gray-100 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-200 transition-colors"
+            >
+              Buka Employee List
+            </button>
+          </div>
         </div>
       </div>
+
+      <div className="max-w-6xl mx-auto bg-white rounded-3xl p-6 shadow-lg mb-6">
+        <div className="flex items-center gap-2 mb-6">
+          <MapPin className="w-6 h-6 text-blue-600" />
+          <h2 className="font-bold text-xl text-gray-900">Desk Location Map</h2>
+        </div>
+        <DeskDistributionMap desks={desks} onSelectDesk={setSelectedDesk} />
+      </div>
+
+      {showReservedList && (
+        <div className="max-w-6xl mx-auto bg-white rounded-3xl p-6 shadow-lg mb-6">
+          <div className="flex items-center gap-2 mb-6">
+            <Users className="w-6 h-6 text-blue-600" />
+            <h2 className="font-bold text-xl text-gray-900">
+              {searchQuery.trim() ? 'Search Results' : 'Daftar Employee yang Reserve'}
+            </h2>
+          </div>
+          <EmployeeRows employees={listedEmployees} />
+        </div>
+      )}
 
       <div className="max-w-6xl mx-auto bg-white rounded-3xl p-6 shadow-lg">
         <div className="flex items-center gap-2 mb-6">
           <MapPin className="w-6 h-6 text-blue-600" />
-          <h2 className="font-bold text-xl text-gray-900">{searchQuery.trim() ? 'Search Results' : 'Desk Status'}</h2>
+          <h2 className="font-bold text-xl text-gray-900">Desk Status</h2>
         </div>
 
-        {searchQuery.trim() ? (
-          <EmployeeRows employees={employees} />
-        ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-            {desks.map((desk) => (
-              <div key={desk.id} onClick={() => setSelectedDesk(desk)} className="cursor-pointer">
-                <DeskCard name={desk.name} floor={desk.floor} status={desk.status} occupied={desk.occupied} total={desk.capacity} />
-              </div>
-            ))}
-          </div>
-        )}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+          {desks.map((desk) => (
+            <div key={desk.id} onClick={() => setSelectedDesk(desk)} className="cursor-pointer">
+              <DeskCard name={desk.name} floor={desk.floor} status={desk.status} occupied={desk.occupied} total={desk.capacity} />
+            </div>
+          ))}
+        </div>
       </div>
 
       {selectedDesk && (
@@ -160,6 +188,60 @@ export function MonitoringPage() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function DeskDistributionMap({
+  desks,
+  onSelectDesk,
+}: {
+  desks: MonitoringDesk[];
+  onSelectDesk: (desk: MonitoringDesk) => void;
+}) {
+  const floors = [
+    { label: 'Lantai 6', desks: desks.filter((desk) => desk.floor.includes('6')) },
+    { label: 'Lantai 7', desks: desks.filter((desk) => desk.floor.includes('7')) },
+  ];
+
+  const statusClass = (status: MonitoringDesk['status']) => {
+    if (status === 'Penuh') return 'bg-red-500';
+    if (status === 'Terisi') return 'bg-yellow-400';
+    return 'bg-green-500';
+  };
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+      {floors.map((floor) => (
+        <div key={floor.label} className="rounded-2xl border border-gray-200 bg-slate-50 p-4">
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className="font-bold text-gray-900">{floor.label}</h3>
+            <div className="flex items-center gap-3 text-xs text-gray-500">
+              <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-green-500" />Kosong</span>
+              <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-yellow-400" />Terisi</span>
+              <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-red-500" />Penuh</span>
+            </div>
+          </div>
+          <div className="rounded-2xl border-2 border-dashed border-slate-300 bg-white p-4">
+            <div className="grid grid-cols-4 gap-3">
+              {floor.desks.map((desk) => (
+                <button
+                  key={desk.id}
+                  type="button"
+                  onClick={() => onSelectDesk(desk)}
+                  className="relative min-h-20 rounded-xl border border-gray-200 bg-white px-2 py-3 text-left shadow-sm hover:border-blue-400 hover:shadow-md transition-all"
+                >
+                  <span className={`absolute right-2 top-2 h-2.5 w-2.5 rounded-full ${statusClass(desk.status)}`} />
+                  <span className="block text-sm font-bold text-gray-900">{desk.name}</span>
+                  <span className="mt-1 block text-[11px] text-gray-500">{desk.occupied}/{desk.capacity} seats</span>
+                  <span className="mt-2 inline-block rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-semibold text-blue-700">{desk.type}</span>
+                </button>
+              ))}
+            </div>
+            {floor.desks.length === 0 && <div className="py-10 text-center text-sm text-gray-500">Tidak ada meja pada filter ini.</div>}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

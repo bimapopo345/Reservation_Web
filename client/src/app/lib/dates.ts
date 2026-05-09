@@ -15,6 +15,20 @@ export function tomorrowInput() {
   return toDateInput(date);
 }
 
+export function isToday(value: string) {
+  return value === todayInput();
+}
+
+export function isTomorrow(value: string) {
+  return value === tomorrowInput();
+}
+
+export function reservationDateLabel(value: string) {
+  if (isToday(value)) return "Today's Reservation";
+  if (isTomorrow(value)) return "Tomorrow's Reservation";
+  return 'Upcoming Reservation';
+}
+
 export function formatDisplayDate(value: string) {
   const [year, month, day] = value.split('-').map(Number);
   return new Intl.DateTimeFormat('en-US', {
