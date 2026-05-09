@@ -1,6 +1,5 @@
 import { Eye, EyeOff, MapPin, Search, Users } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router';
 import { DeskCard } from '../components/DeskCard';
 import { apiFetch } from '../lib/api';
 import { todayInput } from '../lib/dates';
@@ -22,8 +21,7 @@ export function MonitoringPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDesk, setSelectedDesk] = useState<MonitoringDesk | null>(null);
   const [data, setData] = useState<MonitoringResponse | null>(null);
-  const [showReservedList, setShowReservedList] = useState(true);
-  const navigate = useNavigate();
+  const [showReservedList, setShowReservedList] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams({
@@ -105,21 +103,13 @@ export function MonitoringPage() {
               <span className="font-bold text-gray-900">{data?.summary.totalDesks ?? 0}</span>
             </p>
           )}
-          <div className="flex flex-wrap items-center justify-center gap-2">
-            <button
-              onClick={() => setShowReservedList((value) => !value)}
-              className="inline-flex items-center gap-2 rounded-xl bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-100 transition-colors"
-            >
-              {showReservedList ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              {showReservedList ? 'Sembunyikan Daftar' : 'Tampilkan Daftar'}
-            </button>
-            <button
-              onClick={() => navigate(`/employee-list?floor=${selectedFloor}&date=${selectedDate}`)}
-              className="rounded-xl bg-gray-100 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-200 transition-colors"
-            >
-              Buka Employee List
-            </button>
-          </div>
+          <button
+            onClick={() => setShowReservedList((value) => !value)}
+            className="inline-flex items-center gap-2 rounded-xl bg-gray-100 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-200 transition-colors"
+          >
+            {showReservedList ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            {showReservedList ? 'Sembunyikan List' : 'Buka Employee List'}
+          </button>
         </div>
       </div>
 
