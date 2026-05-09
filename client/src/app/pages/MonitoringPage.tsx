@@ -123,14 +123,6 @@ export function MonitoringPage() {
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto bg-white rounded-3xl p-6 shadow-lg mb-6">
-        <div className="flex items-center gap-2 mb-6">
-          <MapPin className="w-6 h-6 text-blue-600" />
-          <h2 className="font-bold text-xl text-gray-900">Desk Location Map</h2>
-        </div>
-        <DeskDistributionMap desks={desks} onSelectDesk={setSelectedDesk} />
-      </div>
-
       {showReservedList && (
         <div className="max-w-6xl mx-auto bg-white rounded-3xl p-6 shadow-lg mb-6">
           <div className="flex items-center gap-2 mb-6">
@@ -188,60 +180,6 @@ export function MonitoringPage() {
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-function DeskDistributionMap({
-  desks,
-  onSelectDesk,
-}: {
-  desks: MonitoringDesk[];
-  onSelectDesk: (desk: MonitoringDesk) => void;
-}) {
-  const floors = [
-    { label: 'Lantai 6', desks: desks.filter((desk) => desk.floor.includes('6')) },
-    { label: 'Lantai 7', desks: desks.filter((desk) => desk.floor.includes('7')) },
-  ];
-
-  const statusClass = (status: MonitoringDesk['status']) => {
-    if (status === 'Penuh') return 'bg-red-500';
-    if (status === 'Terisi') return 'bg-yellow-400';
-    return 'bg-green-500';
-  };
-
-  return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-      {floors.map((floor) => (
-        <div key={floor.label} className="rounded-2xl border border-gray-200 bg-slate-50 p-4">
-          <div className="mb-4 flex items-center justify-between">
-            <h3 className="font-bold text-gray-900">{floor.label}</h3>
-            <div className="flex items-center gap-3 text-xs text-gray-500">
-              <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-green-500" />Kosong</span>
-              <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-yellow-400" />Terisi</span>
-              <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-red-500" />Penuh</span>
-            </div>
-          </div>
-          <div className="rounded-2xl border-2 border-dashed border-slate-300 bg-white p-4">
-            <div className="grid grid-cols-4 gap-3">
-              {floor.desks.map((desk) => (
-                <button
-                  key={desk.id}
-                  type="button"
-                  onClick={() => onSelectDesk(desk)}
-                  className="relative min-h-20 rounded-xl border border-gray-200 bg-white px-2 py-3 text-left shadow-sm hover:border-blue-400 hover:shadow-md transition-all"
-                >
-                  <span className={`absolute right-2 top-2 h-2.5 w-2.5 rounded-full ${statusClass(desk.status)}`} />
-                  <span className="block text-sm font-bold text-gray-900">{desk.name}</span>
-                  <span className="mt-1 block text-[11px] text-gray-500">{desk.occupied}/{desk.capacity} seats</span>
-                  <span className="mt-2 inline-block rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-semibold text-blue-700">{desk.type}</span>
-                </button>
-              ))}
-            </div>
-            {floor.desks.length === 0 && <div className="py-10 text-center text-sm text-gray-500">Tidak ada meja pada filter ini.</div>}
-          </div>
-        </div>
-      ))}
     </div>
   );
 }

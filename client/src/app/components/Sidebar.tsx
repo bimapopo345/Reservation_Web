@@ -1,7 +1,6 @@
 import { Home, Clock, User, LogOut, Building2, Clipboard, Users, BarChart3, Monitor } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router';
 import { useAuth } from '../context/AuthContext';
-import { OtsukaLogo } from './OtsukaLogo';
 
 export function Sidebar() {
   const location = useLocation();
@@ -22,7 +21,15 @@ export function Sidebar() {
       {/* Logo */}
       <div className="mb-8">
         <div className="bg-white rounded-2xl p-3 shadow-sm">
-          <OtsukaLogo />
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
+              <Home className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h1 className="font-bold text-sm text-gray-900">Workspace+</h1>
+              <p className="text-xs text-blue-600 font-semibold">DESK RESERVATION</p>
+            </div>
+          </div>
         </div>
       </div>
 
