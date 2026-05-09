@@ -1,6 +1,6 @@
-import { Search } from 'lucide-react';
+import { EyeOff, Search } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router';
+import { useNavigate, useSearchParams } from 'react-router';
 import { apiFetch } from '../lib/api';
 import { todayInput } from '../lib/dates';
 import type { MonitoringDesk } from '../types';
@@ -14,6 +14,7 @@ type MonitoringResponse = {
 };
 
 export function EmployeeListPage() {
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const floorParam = searchParams.get('floor');
   const dateParam = searchParams.get('date');
@@ -55,6 +56,13 @@ export function EmployeeListPage() {
   const endIndex = startIndex + itemsPerPage;
   const currentEmployees = employees.slice(startIndex, endIndex);
   const getFloorLabel = () => (selectedFloor === 'all' ? 'All Floors' : `Floor ${selectedFloor}`);
+  const backToMonitoring = () => {
+    const params = new URLSearchParams({
+      date: selectedDate,
+      floor: selectedFloor,
+    });
+    navigate(`/monitoring?${params}`);
+  };
 
   return (
     <div className="flex-1 bg-gradient-to-br from-indigo-500 via-indigo-600 to-purple-600 p-4 md:p-8 overflow-auto pt-20 md:pt-8">
@@ -69,7 +77,10 @@ export function EmployeeListPage() {
             <input
               type="date"
               value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
+              onChange={(e) => {
+                setSelectedDate(e.target.value);
+                setCurrentPage(1);
+              }}
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
@@ -110,10 +121,17 @@ export function EmployeeListPage() {
           </div>
         </div>
 
-        <div className="pt-4 border-t border-gray-200">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pt-4 border-t border-gray-200">
           <p className="text-sm text-gray-600">
             Total employee reserved ({getFloorLabel()}): <span className="font-bold text-gray-900">{employees.length}</span>
           </p>
+          <button
+            onClick={backToMonitoring}
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-gray-100 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-200 transition-colors"
+          >
+            <EyeOff className="h-4 w-4" />
+            Sembunyikan List
+          </button>
         </div>
       </div>
 

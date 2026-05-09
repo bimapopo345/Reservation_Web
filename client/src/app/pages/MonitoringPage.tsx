@@ -1,5 +1,6 @@
-import { Eye, EyeOff, MapPin, Search, Users } from 'lucide-react';
+import { MapPin, Search } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router';
 import { DeskCard } from '../components/DeskCard';
 import { apiFetch } from '../lib/api';
 import { todayInput } from '../lib/dates';
@@ -16,12 +17,20 @@ type MonitoringResponse = {
 };
 
 export function MonitoringPage() {
-  const [selectedDate, setSelectedDate] = useState(todayInput());
-  const [selectedFloor, setSelectedFloor] = useState('all');
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const floorParam = searchParams.get('floor');
+  const dateParam = searchParams.get('date');
+  const [selectedDate, setSelectedDate] = useState(dateParam || todayInput());
+  const [selectedFloor, setSelectedFloor] = useState(floorParam || 'all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDesk, setSelectedDesk] = useState<MonitoringDesk | null>(null);
   const [data, setData] = useState<MonitoringResponse | null>(null);
-  const [showReservedList, setShowReservedList] = useState(false);
+
+  useEffect(() => {
+    if (dateParam) setSelectedDate(dateParam);
+    if (floorParam) setSelectedFloor(floorParam);
+  }, [dateParam, floorParam]);
 
   useEffect(() => {
     const params = new URLSearchParams({
@@ -35,8 +44,6 @@ export function MonitoringPage() {
   const getFloorLabel = () => (selectedFloor === 'all' ? 'All Floors' : `Floor ${selectedFloor}`);
   const desks = data?.desks ?? [];
   const employees = data?.employees ?? [];
-  const reservedEmployees = useMemo(() => desks.flatMap((desk) => desk.employees), [desks]);
-  const listedEmployees = searchQuery.trim() ? employees : reservedEmployees;
 
   const deskEmployees = useMemo(() => {
     const map = new Map<number, MonitoringDesk['employees']>();
@@ -104,26 +111,19 @@ export function MonitoringPage() {
             </p>
           )}
           <button
-            onClick={() => setShowReservedList((value) => !value)}
+            onClick={() => {
+              const params = new URLSearchParams({
+                date: selectedDate,
+                floor: selectedFloor,
+              });
+              navigate(`/employee-list?${params}`);
+            }}
             className="inline-flex items-center gap-2 rounded-xl bg-gray-100 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-200 transition-colors"
           >
-            {showReservedList ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-            {showReservedList ? 'Sembunyikan List' : 'Buka Employee List'}
+            Buka Employee List
           </button>
         </div>
       </div>
-
-      {showReservedList && (
-        <div className="max-w-6xl mx-auto bg-white rounded-3xl p-6 shadow-lg mb-6">
-          <div className="flex items-center gap-2 mb-6">
-            <Users className="w-6 h-6 text-blue-600" />
-            <h2 className="font-bold text-xl text-gray-900">
-              {searchQuery.trim() ? 'Search Results' : 'Daftar Employee yang Reserve'}
-            </h2>
-          </div>
-          <EmployeeRows employees={listedEmployees} />
-        </div>
-      )}
 
       <div className="max-w-6xl mx-auto bg-white rounded-3xl p-6 shadow-lg">
         <div className="flex items-center gap-2 mb-6">
@@ -170,42 +170,6 @@ export function MonitoringPage() {
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-function EmployeeRows({ employees }: { employees: MonitoringDesk['employees'] }) {
-  if (employees.length === 0) {
-    return (
-      <div className="text-center py-12 text-gray-500">
-        <p className="text-lg font-medium">No employees found</p>
-        <p className="text-sm mt-2">Try adjusting your search query</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-2">
-      <div className="grid grid-cols-5 gap-4 px-4 py-3 bg-gray-100 rounded-xl font-semibold text-sm text-gray-700">
-        <div>Name</div>
-        <div>Employee ID</div>
-        <div>Email</div>
-        <div>Desk</div>
-        <div>Status</div>
-      </div>
-      {employees.map((employee) => (
-        <div key={`${employee.id}-${employee.desk}`} className="grid grid-cols-5 gap-4 px-4 py-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors items-center">
-          <div className="text-gray-900 font-medium">{employee.name}</div>
-          <div className="text-gray-700">{employee.employeeCode || employee.nik}</div>
-          <div className="text-gray-700 text-sm">{employee.email || '-'}</div>
-          <div className="text-gray-700 font-semibold">{employee.desk}</div>
-          <div>
-            <span className={`px-3 py-1 rounded-full text-xs font-semibold inline-block ${employee.status === 'Checked In' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
-              {employee.status}
-            </span>
-          </div>
-        </div>
-      ))}
     </div>
   );
 }
